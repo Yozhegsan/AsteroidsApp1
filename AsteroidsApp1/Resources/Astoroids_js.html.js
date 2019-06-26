@@ -333,7 +333,7 @@
             // draw space
             ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canv.width, canv.height);
-
+            
             // draw the asteroids
             var a, r, x, y, offs, vert;
             for (var i = 0; i < roids.length; i++) {

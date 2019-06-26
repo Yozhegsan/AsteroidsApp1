@@ -89,5 +89,8 @@
   <ItemGroup>
     <None Include="Resources\Astoroids_js.html.js" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Drill.wav" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

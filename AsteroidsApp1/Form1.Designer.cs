@@ -36,9 +36,10 @@
             // 
             // pic
             // 
+            this.pic.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(192)))), ((int)(((byte)(255)))));
             this.pic.Location = new System.Drawing.Point(12, 12);
             this.pic.Name = "pic";
-            this.pic.Size = new System.Drawing.Size(184, 124);
+            this.pic.Size = new System.Drawing.Size(37, 29);
             this.pic.TabIndex = 0;
             this.pic.TabStop = false;
             // 
@@ -50,12 +51,12 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(286, 177);
+            this.ClientSize = new System.Drawing.Size(190, 59);
             this.Controls.Add(this.pic);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "Asteroids";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyDown);
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyUp);
