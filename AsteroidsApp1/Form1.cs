@@ -15,6 +15,7 @@ namespace AsteroidsApp1
         const int SHIP_TURN_SPD = 270;
         const int SHIP_THRUST = 5;
         const float FRICTION = 0.6f;
+        
         PointF[] ShipFigure = new PointF[4];
         PointF[] ThrustingFigure = new PointF[3];
 
@@ -51,6 +52,8 @@ namespace AsteroidsApp1
             public float x;
             public float y;
         }
+
+        bool ThrustShowFlag = false;
 
         //#####################################################################################################################
         public Form1()
@@ -141,14 +144,19 @@ namespace AsteroidsApp1
                 g.DrawLines(new Pen(Color.Yellow,2), ShipFigure);
 
                 // paint thrusting
+                
                 if (ship.thrusting)
                 {
-                    ThrustingFigure[0] = new PointF(x - ship.r * (2f / 3f * cosA + 0.2f * sinA), y + ship.r * (2f / 3f * sinA - 0.2f * cosA));
-                    ThrustingFigure[1] = new PointF(x - ship.r * 3.3f / 3f * cosA, y + ship.r * 3.3f / 3f * sinA);
-                    ThrustingFigure[2] = new PointF(x - ship.r * (2f / 3f * cosA - 0.2f * sinA), y + ship.r * (2f / 3f * sinA + 0.2f * cosA));
-                    g.DrawLines(new Pen(Color.Orange,5), ThrustingFigure);
+                    ThrustShowFlag = !ThrustShowFlag;
+                    if (ThrustShowFlag)
+                    {
+                        ThrustingFigure[0] = new PointF(x - ship.r * (2f / 3f * cosA + 0.2f * sinA), y + ship.r * (2f / 3f * sinA - 0.2f * cosA));
+                        ThrustingFigure[1] = new PointF(x - ship.r * 3.3f / 3f * cosA, y + ship.r * 3.3f / 3f * sinA);
+                        ThrustingFigure[2] = new PointF(x - ship.r * (2f / 3f * cosA - 0.2f * sinA), y + ship.r * (2f / 3f * sinA + 0.2f * cosA));
+                        g.DrawLines(new Pen(Color.Orange, 5), ThrustingFigure);
+                    }
                 }
-
+                
                 g.DrawString(""+DateTime.Now.ToString("HH:mm:ss"), new Font("Arial", 16), new SolidBrush(Color.FromArgb(128,Color.White)), 10, 10, new StringFormat());
             }
             pic.Image = finalImage;

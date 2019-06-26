@@ -61,6 +61,22 @@ namespace AsteroidsApp1 {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на 
+        ///        const FPS = 30; // frames per second
+        ///        const FRICTION = 0.7; // friction coefficient of space (0 = no friction, 1 = lots of friction)
+        ///        const GAME_LIVES = 3; // starting number of lives
+        ///        const LASER_DIST = 0.6; // max distance laser can travel as fraction of screen width
+        ///        const LASER_EXPLODE_DUR = 0.1; // duration of the lasers&apos; explosion in seconds
+        ///        const LASER_MAX = 10; // maximum number of lasers on screen at once
+        ///        const LASER_SPD = 500; // speed of [остаток строки не уместился]&quot;;.
+        /// </summary>
+        internal static string Astoroids_js_html {
+            get {
+                return ResourceManager.GetString("Astoroids_js_html", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
         internal static System.Drawing.Bitmap kosmos {
