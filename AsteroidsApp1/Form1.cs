@@ -111,7 +111,9 @@ namespace AsteroidsApp1
             {
                 // apply friction (slow the ship down when not thrusting)
                 ship.thrustX -= FRICTION * ship.thrustX / FPS;
+                if (Math.Abs(ship.thrustX) < 0.01f) ship.thrustX = 0;
                 ship.thrustY -= FRICTION * ship.thrustY / FPS;
+                if (Math.Abs(ship.thrustY) < 0.01f) ship.thrustY = 0;
             }
 
             // rotate the ship
@@ -120,6 +122,9 @@ namespace AsteroidsApp1
             // move the ship
             ship.x += ship.thrustX;
             ship.y += ship.thrustY;
+
+            
+            PaintString(ShowSPD(), 10, 30);
 
             // handle edge of screen
             HandleEdgeOfScreen();
@@ -130,15 +135,22 @@ namespace AsteroidsApp1
             // paint thrusting
             if (ship.thrusting) PaintShipThrust();
 
-            // show collision
+            // show ship collision
             if (SHOW_BOUNDING) gfx.DrawArc(new Pen(Color.Red, 1), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2), SHIP_SIZE, SHIP_SIZE, 0, 360);
 
             PaintString(DateTime.Now.ToString("HH:mm:ss"), 10, 10);
+
             //if (DateTime.Now.Second == 0 && SoundFlag) { PlaySoundFromRes(); SoundFlag = false; }
             //if (DateTime.Now.Second == 1) SoundFlag = true;
 
             pic.Image = finalImage;
             if (DateTime.Now.Second % 2 == 0) GC.Collect();
+        }
+
+        private string ShowSPD()
+        {
+
+            return "SPD: " + (Math.Round(Math.Sqrt((ship.thrustX * ship.thrustX) + (ship.thrustY * ship.thrustY)), 2)*100).ToString();
         }
 
         private void createAsteroidBelt()
