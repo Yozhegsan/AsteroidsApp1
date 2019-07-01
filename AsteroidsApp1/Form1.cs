@@ -18,10 +18,9 @@ namespace AsteroidsApp1
         const int SHIP_TURN_SPD = 270;
         const int SHIP_THRUST = 5;
         const float FRICTION = 0.5f;
-        const bool SHOW_BOUNDING = false; // show or hide collision bounding
         const int ROID_SIZE = 100; // starting size of asteroids in pixels
         const int FPS = 30;
-        const int ROID_SPD = 70; // max starting speed of asteroids in pixels per second
+        const int ROID_SPD = 60; // max starting speed of asteroids in pixels per second
         const int ROID_VERT = 10; // average number of vertices on each asteroid
         const int ROID_NUM = 3; // starting number of asteroids
         const int GAME_LIVES = 3; // starting number of lives
@@ -34,6 +33,7 @@ namespace AsteroidsApp1
         const int LASER_MAX = 10; // maximum number of lasers on screen at once
         const int LASER_SPD = 500; // speed of lasers in pixels per second
         const float LASER_DIST = 0.6f; // max distance laser can travel as fraction of screen width
+        const int SHIP_INV_DUR = 3; // duration of the ship's invisibility in seconds
 
         int roidsTotal = 0;
         int roidsLeft = 0;
@@ -141,8 +141,8 @@ namespace AsteroidsApp1
                 y = 240,
                 a = 90f / 180f * (float)Math.PI,
                 r = SHIP_SIZE / 2,
-                blinkNum = 0,
-                blinkTime = 0,
+                blinkNum = (int)Math.Ceiling(SHIP_INV_DUR / SHIP_BLINK_DUR),
+                blinkTime = (int)Math.Ceiling(SHIP_BLINK_DUR * FPS),
                 canShoot = true,
                 dead = false,
                 explodeTime = 0,
@@ -154,7 +154,7 @@ namespace AsteroidsApp1
             };
         }
 
-        private void RefreshScene()
+        private void UpdateScene()
         {
             bool blinkOn = ship.blinkNum % 2 == 0;
             bool exploding = ship.explodeTime > 0;
@@ -170,6 +170,8 @@ namespace AsteroidsApp1
             {
                 ship.thrustX += SHIP_THRUST * (float)Math.Cos(ship.a) / FPS;
                 ship.thrustY -= SHIP_THRUST * (float)Math.Sin(ship.a) / FPS;
+
+
             }
             else
             {
@@ -183,7 +185,6 @@ namespace AsteroidsApp1
 
 
             // paint the ship
-
             if (!exploding)
             {
                 if (blinkOn && !ship.dead)
@@ -371,11 +372,12 @@ namespace AsteroidsApp1
                     }
                 }
             }
+            
 
             PaintString("Score: " + score, 10, 30);
             if (ship.dead)
             {
-                PaintString(Color.Yellow, "F1 for new game");
+                PaintString(Color.Yellow, "F1 for new game\n  or F10 for exit");
             }
             pic.Image = finalImage;
             if (DateTime.Now.Second % 2 == 0) GC.Collect();
@@ -409,7 +411,9 @@ namespace AsteroidsApp1
             }
 
             // Present new ship // by Yozheg
-            if (scoreForLife > 10000) { scoreForLife = 0; lives++; }
+            if (scoreForLife >= 10000) { scoreForLife = scoreForLife - 10000; lives++;  }
+
+            
 
             // check high score
             //if (score > scoreHigh)
@@ -548,7 +552,7 @@ namespace AsteroidsApp1
 
         private void tmrMain_Tick(object sender, EventArgs e)
         {
-            RefreshScene();
+            UpdateScene();
         }
 
         private void shootLaser()
@@ -591,7 +595,9 @@ namespace AsteroidsApp1
                     break;
                 case Keys.Escape:
                     tmrMain.Enabled = !tmrMain.Enabled;
-                    //Application.Exit();
+                    break;
+                case Keys.F10:
+                    Application.Exit();
                     break;
 
             }
