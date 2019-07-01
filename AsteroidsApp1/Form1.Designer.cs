@@ -37,9 +37,9 @@
             // pic
             // 
             this.pic.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(192)))), ((int)(((byte)(255)))));
-            this.pic.Location = new System.Drawing.Point(12, 12);
+            this.pic.Location = new System.Drawing.Point(12, 9);
             this.pic.Name = "pic";
-            this.pic.Size = new System.Drawing.Size(37, 29);
+            this.pic.Size = new System.Drawing.Size(46, 32);
             this.pic.TabIndex = 0;
             this.pic.TabStop = false;
             // 
@@ -51,7 +51,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(204, 59);
+            this.ClientSize = new System.Drawing.Size(187, 59);
             this.Controls.Add(this.pic);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;

@@ -12,6 +12,8 @@ namespace AsteroidsApp1
 {
     public partial class Form1 : Form
     {
+        const int SIZE_X = 640;
+        const int SIZE_Y = 480;
         const int SHIP_SIZE = 20;
         const int SHIP_TURN_SPD = 270;
         const int SHIP_THRUST = 5;
@@ -19,20 +21,31 @@ namespace AsteroidsApp1
         const bool SHOW_BOUNDING = false; // show or hide collision bounding
         const int ROID_SIZE = 100; // starting size of asteroids in pixels
         const int FPS = 30;
-        const int ROID_SPD = 50; // max starting speed of asteroids in pixels per second
+        const int ROID_SPD = 70; // max starting speed of asteroids in pixels per second
         const int ROID_VERT = 10; // average number of vertices on each asteroid
         const int ROID_NUM = 3; // starting number of asteroids
         const int GAME_LIVES = 3; // starting number of lives
+        const int ROID_PTS_LGE = 20; // points scored for a large asteroid
+        const int ROID_PTS_MED = 50; // points scored for a medium asteroid
+        const int ROID_PTS_SML = 100; // points scored for a small asteroid
+        const float SHIP_EXPLODE_DUR = 0.3f; // duration of the ship's explosion in seconds
+        const float SHIP_BLINK_DUR = 0.1f; // duration in seconds of a single blink during ship's invisibility
+        const float LASER_EXPLODE_DUR = 0.1f; // duration of the lasers' explosion in seconds
+        const int LASER_MAX = 10; // maximum number of lasers on screen at once
+        const int LASER_SPD = 500; // speed of lasers in pixels per second
+        const float LASER_DIST = 0.6f; // max distance laser can travel as fraction of screen width
 
         int roidsTotal = 0;
         int roidsLeft = 0;
         int level = 0;
         int lives = 0;
+        int score = 0;
+        int scoreForLife = 0;
 
         PointF[] ShipFigure = new PointF[4];
         PointF[] ThrustingFigure = new PointF[3];
 
-        Bitmap finalImage = new Bitmap(640, 480);
+        Bitmap finalImage = new Bitmap(SIZE_X, SIZE_Y);
         Graphics gfx;
         
 
@@ -47,7 +60,7 @@ namespace AsteroidsApp1
             public bool canShoot;
             public bool dead;
             public int explodeTime;
-            public List<int> lasers;
+            public List<LaserStruct> lasers;
             public float rot;
             public bool thrusting;
             public float thrustX;
@@ -65,8 +78,18 @@ namespace AsteroidsApp1
             public float a;
             public float r;
         }
-
         List<AsteroidStruct> roids = new List<AsteroidStruct>();
+        struct LaserStruct
+        {
+            public float x;
+            public float y;
+            public float xv;
+            public float yv;
+            public float dist;
+            public int explodeTime;
+        }
+
+        Random rndNewAsteroid = new Random();
         //#####################################################################################################################
 
         public Form1()
@@ -76,23 +99,24 @@ namespace AsteroidsApp1
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            pic.SetBounds(0, 0, 640, 480);
+            pic.SetBounds(0, 0, SIZE_X, SIZE_Y);
             pic.BackgroundImage = res.kosmos;
-            this.ClientSize = new Size(640, 480);
+            this.ClientSize = new Size(SIZE_X, SIZE_Y);
             this.Text = "Asteroids by Yozheg";
             gfx = Graphics.FromImage(finalImage); // pictureBox1.CreateGraphics() - Галімий метод
 
-            newGame(); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            newGame(); 
 
             tmrMain.Interval = 1000 / FPS;
             tmrMain.Enabled = true;
-            //System.Media.SystemSounds.Beep.Play();
         }
 
         private void newGame()
         {
             level = 0;
             lives = GAME_LIVES;
+            score = 0;
+            scoreForLife = 0;
             ship = NewShip();
 
             NewLevel();
@@ -119,9 +143,10 @@ namespace AsteroidsApp1
                 r = SHIP_SIZE / 2,
                 blinkNum = 0,
                 blinkTime = 0,
-                canShoot = false,
+                canShoot = true,
                 dead = false,
                 explodeTime = 0,
+                lasers = new List<LaserStruct>(),
                 rot = 0,
                 thrusting = false,
                 thrustX = 0,
@@ -131,8 +156,15 @@ namespace AsteroidsApp1
 
         private void RefreshScene()
         {
+            bool blinkOn = ship.blinkNum % 2 == 0;
+            bool exploding = ship.explodeTime > 0;
+
             // gfx.DrawImage(Bitmap, new Rectangle(x, y, w, h));
             gfx.Clear(Color.Transparent);
+
+            // Paint Asteroids
+            DrawTheAsteroids();
+
             // thrust the ship
             if (ship.thrusting && !ship.dead)
             {
@@ -148,21 +180,131 @@ namespace AsteroidsApp1
                 if (Math.Abs(ship.thrustY) < 0.01f) ship.thrustY = 0;
             }
 
-            // rotate the ship
-            ship.a += ship.rot;
 
-            // move the ship
-            ship.x += ship.thrustX;
-            ship.y += ship.thrustY;
 
-            
-            PaintString(ShowSPD(), 10, 30);
+            // paint the ship
+
+            if (!exploding)
+            {
+                if (blinkOn && !ship.dead)
+                {
+                    //drawShip(ship.x, ship.y, ship.a);
+                    PaintShip();
+                }
+
+                // handle blinking
+                if (ship.blinkNum > 0)
+                {
+
+                    // reduce the blink time
+                    ship.blinkTime--;
+
+                    // reduce the blink num
+                    if (ship.blinkTime == 0)
+                    {
+                        ship.blinkTime = (int)Math.Ceiling(SHIP_BLINK_DUR * FPS);
+                        ship.blinkNum--;
+                    }
+                }
+            }
+            else
+            {
+                // draw the explosion (concentric circles of different colours)
+                gfx.DrawArc(new Pen(Color.DarkRed, 5), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2), ship.r * 1.7f, ship.r * 1.7f, 0, 360);
+                gfx.DrawArc(new Pen(Color.Red, 5), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2),     ship.r * 1.4f, ship.r * 1.4f, 0, 360);
+                gfx.DrawArc(new Pen(Color.Orange, 5), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2),  ship.r * 1.1f, ship.r * 1.1f, 0, 360);
+                gfx.DrawArc(new Pen(Color.Yellow, 5), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2),  ship.r * 0.8f, ship.r * 0.8f, 0, 360);
+                gfx.DrawArc(new Pen(Color.White, 5), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2),   ship.r * 0.5f, ship.r * 0.5f, 0, 360);
+            }
+
+            // draw the lasers
+            for (var i = 0; i < ship.lasers.Count; i++)
+            {
+                if (ship.lasers[i].explodeTime == 0)
+                    gfx.DrawArc(new Pen(Color.White, 1), ship.lasers[i].x, ship.lasers[i].y, SHIP_SIZE / 15f, SHIP_SIZE / 15f, 0, 360);
+                else
+                    gfx.DrawArc(new Pen(Color.OrangeRed, 5), ship.lasers[i].x, ship.lasers[i].y, ship.r * 0.5f, ship.r * 0.5f, 0, 360);
+            }
+
+            // detect laser hits on asteroids
+            float ax, ay, ar, lx, ly;
+            for (int i = roids.Count - 1; i >= 0; i--)
+            {
+                // loop over the lasers
+                for (int j = ship.lasers.Count - 1; j >= 0; j--)
+                {
+                    // detect hits
+                    if (ship.lasers[j].explodeTime == 0 && distBetweenPoints(roids[i].x, roids[i].y, ship.lasers[j].x, ship.lasers[j].y) < roids[i].r)
+                    {
+                        // destroy the asteroid and activate the laser explosion
+                        destroyAsteroid(i);
+                        LaserStruct tmp = ship.lasers[j];
+                        tmp.explodeTime = (int)Math.Ceiling(LASER_EXPLODE_DUR * FPS);
+                        ship.lasers[j] = tmp;
+                        break;
+                    }
+                }
+            }
 
             // handle edge of screen
             HandleEdgeOfScreen();
 
-            // paint the ship
-            PaintShip();
+            // move the lasers
+            for (var i = ship.lasers.Count - 1; i >= 0; i--)
+            {
+                LaserStruct tmp = ship.lasers[i];
+
+                // check distance travelled
+                if (tmp.dist > LASER_DIST * SIZE_X)
+                {
+                    //ship.lasers.splice(i, 1);
+                    ship.lasers.RemoveAt(i);
+                    continue;
+                }
+
+                // handle the explosion
+                if (ship.lasers[i].explodeTime > 0)
+                {
+                    tmp.explodeTime--;
+
+                    // destroy the laser after the duration is up
+                    if (tmp.explodeTime == 0)
+                    {
+                        //ship.lasers.splice(i, 1);
+                        ship.lasers.RemoveAt(i);
+                        continue;
+                    }
+                }
+                else
+                {
+                    // move the laser
+                    tmp.x += tmp.xv;
+                    tmp.y += tmp.yv;
+
+                    // calculate the distance travelled
+                    tmp.dist += (float)Math.Sqrt(Math.Pow(tmp.xv, 2) + Math.Pow(tmp.yv, 2));
+                }
+
+                // handle edge of screen
+                if (tmp.x < 0)
+                {
+                    tmp.x = SIZE_X;
+                }
+                else if (tmp.x > SIZE_X)
+                {
+                    tmp.x = 0;
+                }
+                if (tmp.y < 0)
+                {
+                    tmp.y = SIZE_Y;
+                }
+                else if (tmp.y > SIZE_Y)
+                {
+                    tmp.y = 0;
+                }
+
+                ship.lasers[i] = tmp;
+            }
 
             // Move asteroids 
             for (var i = 0; i < roids.Count; i++)
@@ -172,46 +314,146 @@ namespace AsteroidsApp1
                 tmp.y += roids[i].yv;
                 
                 // handle asteroid edge of screen
-                if (roids[i].x < 0 - roids[i].r) tmp.x= 640 + roids[i].r; else if (roids[i].x > 640 + roids[i].r) tmp.x = 0 - roids[i].r;
-                if (roids[i].y < 0 - roids[i].r) tmp.y = 480 + roids[i].r; else if (roids[i].y > 480 + roids[i].r) tmp.y = 0 - roids[i].r;
+                if (roids[i].x < 0 - roids[i].r) tmp.x= SIZE_X + roids[i].r; else if (roids[i].x > SIZE_X + roids[i].r) tmp.x = 0 - roids[i].r;
+                if (roids[i].y < 0 - roids[i].r) tmp.y = SIZE_Y + roids[i].r; else if (roids[i].y > SIZE_Y + roids[i].r) tmp.y = 0 - roids[i].r;
 
                 roids[i] = tmp;
-
             }
-            //PaintString(roids[0].xv.ToString(), 10, 70);
-            // Paint Asteroids
-            DrawTheAsteroids();
-           
-            // paint thrusting
-            if (ship.thrusting) PaintShipThrust();
 
             // show ship collision
-            if (SHOW_BOUNDING) gfx.DrawArc(new Pen(Color.Red, 1), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2), SHIP_SIZE, SHIP_SIZE, 0, 360);
+            // gfx.DrawArc(new Pen(Color.Red, 1), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2), SHIP_SIZE, SHIP_SIZE, 0, 360);
 
-            PaintString(DateTime.Now.ToString("HH:mm:ss"), 10, 10);
+            PaintString("Ships: " + lives, 10, 10);
 
             //if (DateTime.Now.Second == 0 && SoundFlag) { PlaySoundFromRes(); SoundFlag = false; }
             //if (DateTime.Now.Second == 1) SoundFlag = true;
+            if (!exploding)
+            {
+                // only check when not blinking
+                if (ship.blinkNum == 0 && !ship.dead)
+                {
+                    for (var i = 0; i < roids.Count; i++)
+                    {
+                        if (distBetweenPoints(ship.x, ship.y, roids[i].x, roids[i].y) < ship.r + roids[i].r)
+                        {
+                            explodeShip();
+                            destroyAsteroid(i);
+                            break;
+                        }
+                    }
+                }
 
+                // paint thrusting
+                if (ship.thrusting && !ship.dead) PaintShipThrust();
 
+                // rotate the ship
+                ship.a += ship.rot;
 
+                // move the ship
+                ship.x += ship.thrustX;
+                ship.y += ship.thrustY;
+            }
+            else
+            {
+                ship.explodeTime--;
+
+                // reset the ship after the explosion has finished
+                if (ship.explodeTime == 0)
+                {
+                    lives--;
+                    if (lives == 0)
+                    {
+                        gameOver();
+                    }
+                    else
+                    {
+                        ship = NewShip();
+                    }
+                }
+            }
+
+            PaintString("Score: " + score, 10, 30);
+            if (ship.dead)
+            {
+                PaintString(Color.Yellow, "F1 for new game");
+            }
             pic.Image = finalImage;
             if (DateTime.Now.Second % 2 == 0) GC.Collect();
+        }
+
+        private void destroyAsteroid(int index)
+        {
+            float x = roids[index].x;
+            float y = roids[index].y;
+            float r = roids[index].r;
+
+            // split the asteroid in two if necessary
+            if (r == (float)Math.Ceiling(ROID_SIZE / 2f))
+            { // large asteroid
+                roids.Add(NewAsteroid(x, y, (float)Math.Ceiling(ROID_SIZE / 4f)));
+                roids.Add(NewAsteroid(x, y, (float)Math.Ceiling(ROID_SIZE / 4f)));
+                score += ROID_PTS_LGE;
+                scoreForLife += ROID_PTS_LGE;
+            }
+            else if (r == (float)Math.Ceiling(ROID_SIZE / 4f))
+            { // medium asteroid
+                roids.Add(NewAsteroid(x, y, (float)Math.Ceiling(ROID_SIZE / 8f)));
+                roids.Add(NewAsteroid(x, y, (float)Math.Ceiling(ROID_SIZE / 8f)));
+                score += ROID_PTS_MED;
+                scoreForLife += ROID_PTS_MED;
+            }
+            else
+            {
+                score += ROID_PTS_SML;
+                scoreForLife += ROID_PTS_SML;
+            }
+
+            // Present new ship // by Yozheg
+            if (scoreForLife > 10000) { scoreForLife = 0; lives++; }
+
+            // check high score
+            //if (score > scoreHigh)
+            //{
+            //    scoreHigh = score;
+            //    localStorage.setItem(SAVE_KEY_SCORE, scoreHigh);
+            //}
+
+            // destroy the asteroid
+            roids.RemoveAt(index);
+            
+            // calculate the ratio of remaining asteroids to determine music tempo
+            roidsLeft--;
+            
+            // new level when no more asteroids
+            if (roids.Count == 0)
+            {
+                level++;
+                NewLevel();
+            }
+        }
+
+        private void gameOver()
+        {
+            ship.dead = true;
+        }
+
+        private void explodeShip()
+        {
+            ship.explodeTime = (int)Math.Ceiling(SHIP_EXPLODE_DUR * FPS);
         }
 
         private void DrawTheAsteroids()
         {
             // draw the asteroids
-            float a, r, x, y, offs, vert;
+            float a, r, x, y;
             for (var i = 0; i < roids.Count; i++)
             {
-                
                 // get the asteroid properties
                 r = roids[i].r;
                 x = roids[i].x;
                 y = roids[i].y;
 
-                gfx.DrawArc(new Pen(Color.Red, 3), x - r, y - r, r, r, 0, 360);
+                gfx.DrawArc(new Pen(Color.Green, 3), x - r, y - r, r * 2, r * 2, 0, 360);
             }
         }
 
@@ -219,15 +461,11 @@ namespace AsteroidsApp1
         {
             float lvlMult = 1f + 0.1f * level;
             AsteroidStruct roid = new AsteroidStruct();
-            Random rnd = new Random();
             roid.x = x;
             roid.y = y;
-            roid.xv = (rnd.Next(0, 10) / 10f) * ROID_SPD * lvlMult / FPS * (rnd.Next(10) < 5 ? 1f : -1f);
-            Thread.Sleep(50);
-            roid.yv = (rnd.Next(0, 10) / 10f) * ROID_SPD * lvlMult / FPS * (rnd.Next(10) < 5 ? 1f : -1f);
-            Thread.Sleep(50);
-            roid.a = (rnd.Next(0, 10) / 10f) * (float)Math.PI * 2f;
-            Thread.Sleep(50);
+            roid.xv = (float)(rndNewAsteroid.NextDouble() * ROID_SPD * lvlMult / FPS * (rndNewAsteroid.NextDouble() < 0.5 ? 1 : -1));
+            roid.yv = (float)(rndNewAsteroid.NextDouble() * ROID_SPD * lvlMult / FPS * (rndNewAsteroid.NextDouble() < 0.5 ? 1 : -1));
+            roid.a = (float)(rndNewAsteroid.NextDouble() * Math.PI * 2);
             roid.r = r;
             return roid;
         }
@@ -249,8 +487,8 @@ namespace AsteroidsApp1
                 // random asteroid location (not touching spaceship)
                 do
                 {
-                    x = rnd.Next(640);
-                    y = rnd.Next(480);
+                    x = rnd.Next(SIZE_X);
+                    y = rnd.Next(SIZE_Y);
                 } while (distBetweenPoints(ship.x, ship.y, x, y) < ROID_SIZE * 2 + ship.r);
                 roids.Add(NewAsteroid(x, y, (float)Math.Ceiling((double)ROID_SIZE / 2)));
             }
@@ -261,9 +499,17 @@ namespace AsteroidsApp1
             return (float)Math.Sqrt(Math.Pow(x2 - x1, 2) + Math.Pow(y2 - y1, 2));
         }
 
-        private void PaintString(string msg, int x, int y)
+
+        private void PaintString(Color c, string msg)
         {
-            gfx.DrawString(msg, new Font("Arial", 16), new SolidBrush(Color.FromArgb(128, Color.White)), x, y, new StringFormat());
+            int w = (int)gfx.MeasureString(msg, new Font("Arial", 16)).Width;
+            int ww = (SIZE_X - w) / 2;
+            PaintString(c, msg, ww, SIZE_Y / 2);
+        }
+        private void PaintString(string msg, int x, int y) { PaintString(Color.FromArgb(128, Color.White), msg, x, y); }
+        private void PaintString(Color c, string msg, int x, int y)
+        {
+            gfx.DrawString(msg, new Font("Arial", 16), new SolidBrush(c), x, y, new StringFormat());
         }
 
         private void HandleEdgeOfScreen()
@@ -305,11 +551,34 @@ namespace AsteroidsApp1
             RefreshScene();
         }
 
+        private void shootLaser()
+        {
+            // create the laser object
+            if (ship.canShoot && ship.lasers.Count < LASER_MAX)
+            {
+                LaserStruct tmp = new LaserStruct();
+                tmp.x = ship.x + 4 / 3 * ship.r * (float)Math.Cos(ship.a);
+                tmp.y = ship.y - 4 / 3 * ship.r * (float)Math.Sin(ship.a);
+                tmp.xv = LASER_SPD * (float)Math.Cos(ship.a) / FPS;
+                tmp.yv = -LASER_SPD * (float)Math.Sin(ship.a) / FPS;
+                tmp.dist = 0f;
+                tmp.explodeTime = 0;
+                ship.lasers.Add(tmp);
+            }
+
+            // prevent further shooting
+            ship.canShoot = false;
+        }
+
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
             switch (e.KeyCode)
             {
+                case Keys.F1:
+                    newGame();
+                    break;
                 case Keys.Space:
+                    if(!ship.dead) shootLaser();
                     break;
                 case Keys.Left:
                     ship.rot = SHIP_TURN_SPD / 180f * (float)Math.PI / FPS;
@@ -321,8 +590,8 @@ namespace AsteroidsApp1
                     ship.thrusting = true;
                     break;
                 case Keys.Escape:
-
-                    Application.Exit();
+                    tmrMain.Enabled = !tmrMain.Enabled;
+                    //Application.Exit();
                     break;
 
             }
@@ -333,6 +602,7 @@ namespace AsteroidsApp1
             switch (e.KeyCode)
             {
                 case Keys.Space:
+                    ship.canShoot = true;
                     break;
                 case Keys.Left:
                     ship.rot = 0f;
