@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace AsteroidsApp1
@@ -18,11 +19,15 @@ namespace AsteroidsApp1
         const bool SHOW_BOUNDING = false; // show or hide collision bounding
         const int ROID_SIZE = 100; // starting size of asteroids in pixels
         const int FPS = 30;
-
+        const int ROID_SPD = 50; // max starting speed of asteroids in pixels per second
+        const int ROID_VERT = 10; // average number of vertices on each asteroid
+        const int ROID_NUM = 3; // starting number of asteroids
+        const int GAME_LIVES = 3; // starting number of lives
 
         int roidsTotal = 0;
         int roidsLeft = 0;
-        
+        int level = 0;
+        int lives = 0;
 
         PointF[] ShipFigure = new PointF[4];
         PointF[] ThrustingFigure = new PointF[3];
@@ -48,9 +53,20 @@ namespace AsteroidsApp1
             public float thrustX;
             public float thrustY;
         }
-
         ShipStruct ship;
         bool ThrustShowFlag = false;
+
+        struct AsteroidStruct
+        {
+            public float x;
+            public float y;
+            public float xv;
+            public float yv;
+            public float a;
+            public float r;
+        }
+
+        List<AsteroidStruct> roids = new List<AsteroidStruct>();
         //#####################################################################################################################
 
         public Form1()
@@ -65,10 +81,26 @@ namespace AsteroidsApp1
             this.ClientSize = new Size(640, 480);
             this.Text = "Asteroids by Yozheg";
             gfx = Graphics.FromImage(finalImage); // pictureBox1.CreateGraphics() - Галімий метод
-            ship = NewShip();
+
+            newGame(); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
             tmrMain.Interval = 1000 / FPS;
             tmrMain.Enabled = true;
             //System.Media.SystemSounds.Beep.Play();
+        }
+
+        private void newGame()
+        {
+            level = 0;
+            lives = GAME_LIVES;
+            ship = NewShip();
+
+            NewLevel();
+        }
+
+        private void NewLevel()
+        {
+            createAsteroidBelt();
         }
 
         private void PlaySoundFromRes()
@@ -132,6 +164,24 @@ namespace AsteroidsApp1
             // paint the ship
             PaintShip();
 
+            // Move asteroids 
+            for (var i = 0; i < roids.Count; i++)
+            {
+                AsteroidStruct tmp = roids[i];
+                tmp.x += roids[i].xv;
+                tmp.y += roids[i].yv;
+                
+                // handle asteroid edge of screen
+                if (roids[i].x < 0 - roids[i].r) tmp.x= 640 + roids[i].r; else if (roids[i].x > 640 + roids[i].r) tmp.x = 0 - roids[i].r;
+                if (roids[i].y < 0 - roids[i].r) tmp.y = 480 + roids[i].r; else if (roids[i].y > 480 + roids[i].r) tmp.y = 0 - roids[i].r;
+
+                roids[i] = tmp;
+
+            }
+            //PaintString(roids[0].xv.ToString(), 10, 70);
+            // Paint Asteroids
+            DrawTheAsteroids();
+           
             // paint thrusting
             if (ship.thrusting) PaintShipThrust();
 
@@ -143,32 +193,72 @@ namespace AsteroidsApp1
             //if (DateTime.Now.Second == 0 && SoundFlag) { PlaySoundFromRes(); SoundFlag = false; }
             //if (DateTime.Now.Second == 1) SoundFlag = true;
 
+
+
             pic.Image = finalImage;
             if (DateTime.Now.Second % 2 == 0) GC.Collect();
         }
 
+        private void DrawTheAsteroids()
+        {
+            // draw the asteroids
+            float a, r, x, y, offs, vert;
+            for (var i = 0; i < roids.Count; i++)
+            {
+                
+                // get the asteroid properties
+                r = roids[i].r;
+                x = roids[i].x;
+                y = roids[i].y;
+
+                gfx.DrawArc(new Pen(Color.Red, 3), x - r, y - r, r, r, 0, 360);
+            }
+        }
+
+        private AsteroidStruct NewAsteroid(float x, float y, float r)
+        {
+            float lvlMult = 1f + 0.1f * level;
+            AsteroidStruct roid = new AsteroidStruct();
+            Random rnd = new Random();
+            roid.x = x;
+            roid.y = y;
+            roid.xv = (rnd.Next(0, 10) / 10f) * ROID_SPD * lvlMult / FPS * (rnd.Next(10) < 5 ? 1f : -1f);
+            Thread.Sleep(50);
+            roid.yv = (rnd.Next(0, 10) / 10f) * ROID_SPD * lvlMult / FPS * (rnd.Next(10) < 5 ? 1f : -1f);
+            Thread.Sleep(50);
+            roid.a = (rnd.Next(0, 10) / 10f) * (float)Math.PI * 2f;
+            Thread.Sleep(50);
+            roid.r = r;
+            return roid;
+        }
+
         private string ShowSPD()
         {
-
             return "SPD: " + (Math.Round(Math.Sqrt((ship.thrustX * ship.thrustX) + (ship.thrustY * ship.thrustY)), 2)*100).ToString();
         }
 
         private void createAsteroidBelt()
         {
-            //roids = [];
-            //roidsTotal = (ROID_NUM + level) * 7;
-            //roidsLeft = roidsTotal;
-            //var x, y;
-            //for (var i = 0; i < ROID_NUM + level; i++)
-            //{
-            //    // random asteroid location (not touching spaceship)
-            //    do
-            //    {
-            //        x = Math.floor(Math.random() * canv.width);
-            //        y = Math.floor(Math.random() * canv.height);
-            //    } while (distBetweenPoints(ship.x, ship.y, x, y) < ROID_SIZE * 2 + ship.r);
-            //    roids.push(newAsteroid(x, y, Math.ceil(ROID_SIZE / 2)));
-            //}
+            roids.Clear();
+            roidsTotal = (ROID_NUM + level) * 7;
+            roidsLeft = roidsTotal;
+            Random rnd=new Random();
+            float x=0f, y=0f;
+            for (var i = 0; i < ROID_NUM + level; i++)
+            {
+                // random asteroid location (not touching spaceship)
+                do
+                {
+                    x = rnd.Next(640);
+                    y = rnd.Next(480);
+                } while (distBetweenPoints(ship.x, ship.y, x, y) < ROID_SIZE * 2 + ship.r);
+                roids.Add(NewAsteroid(x, y, (float)Math.Ceiling((double)ROID_SIZE / 2)));
+            }
+        }
+
+        private float distBetweenPoints(float x1, float y1, float x2, float y2)
+        {
+            return (float)Math.Sqrt(Math.Pow(x2 - x1, 2) + Math.Pow(y2 - y1, 2));
         }
 
         private void PaintString(string msg, int x, int y)
