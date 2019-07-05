@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -14,7 +15,7 @@ namespace AsteroidsApp1
     {
         const int SIZE_X = 640;
         const int SIZE_Y = 480;
-        const int SHIP_SIZE = 20;
+        const int SHIP_SIZE = 30;
         const int SHIP_TURN_SPD = 270;
         const int SHIP_THRUST = 5;
         const float FRICTION = 0.5f;
@@ -75,7 +76,7 @@ namespace AsteroidsApp1
             public float y;
             public float xv;
             public float yv;
-            public float a;
+            public int a;
             public float r;
         }
         List<AsteroidStruct> roids = new List<AsteroidStruct>();
@@ -90,6 +91,8 @@ namespace AsteroidsApp1
         }
 
         Random rndNewAsteroid = new Random();
+        Bitmap asteroid = res.Asteroid;
+        Bitmap shipBMP = res.Ship_1;
         //#####################################################################################################################
 
         public Form1()
@@ -154,6 +157,19 @@ namespace AsteroidsApp1
             };
         }
 
+        private Bitmap RotateImage(Image img, float rotationAngle)
+        {
+            Bitmap bmp = new Bitmap(img.Width, img.Height);
+            Graphics gfxx = Graphics.FromImage(bmp);
+            gfxx.TranslateTransform((float)bmp.Width / 2, (float)bmp.Height / 2);
+            gfxx.RotateTransform(rotationAngle);
+            gfxx.TranslateTransform(-(float)bmp.Width / 2, -(float)bmp.Height / 2);
+            gfxx.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            gfxx.DrawImage(img, 0,0, img.Width, img.Height);
+            gfxx.Dispose();
+            return bmp;
+        }
+
         private void UpdateScene()
         {
             bool blinkOn = ship.blinkNum % 2 == 0;
@@ -190,7 +206,9 @@ namespace AsteroidsApp1
                 if (blinkOn && !ship.dead)
                 {
                     //drawShip(ship.x, ship.y, ship.a);
-                    PaintShip();
+                    //PaintShip();
+
+                    gfx.DrawImage(RotateImage(shipBMP, ship.a / (float)Math.PI * 180*-1+90), ship.x - ship.r, ship.y - ship.r, ship.r * 2, ship.r * 2);
                 }
 
                 // handle blinking
@@ -449,15 +467,17 @@ namespace AsteroidsApp1
         private void DrawTheAsteroids()
         {
             // draw the asteroids
-            float a, r, x, y;
+            float a, r, x, y; AsteroidStruct tmp;
             for (var i = 0; i < roids.Count; i++)
             {
-                // get the asteroid properties
-                r = roids[i].r;
-                x = roids[i].x;
-                y = roids[i].y;
+                tmp = roids[i];
+                tmp.a++;
+                if (tmp.a == 360) tmp.a = 0;
 
-                gfx.DrawArc(new Pen(Color.Green, 3), x - r, y - r, r * 2, r * 2, 0, 360);
+                gfx.DrawImage(RotateImage(asteroid, tmp.a), tmp.x - tmp.r, tmp.y - tmp.r, tmp.r * 2, tmp.r * 2);
+
+                //gfx.DrawArc(new Pen(Color.Green, 1), tmp.x - tmp.r, tmp.y - tmp.r, tmp.r * 2, tmp.r * 2, 0, 360);
+                roids[i] = tmp;
             }
         }
 
@@ -469,14 +489,14 @@ namespace AsteroidsApp1
             roid.y = y;
             roid.xv = (float)(rndNewAsteroid.NextDouble() * ROID_SPD * lvlMult / FPS * (rndNewAsteroid.NextDouble() < 0.5 ? 1 : -1));
             roid.yv = (float)(rndNewAsteroid.NextDouble() * ROID_SPD * lvlMult / FPS * (rndNewAsteroid.NextDouble() < 0.5 ? 1 : -1));
-            roid.a = (float)(rndNewAsteroid.NextDouble() * Math.PI * 2);
+            roid.a = rndNewAsteroid.Next(0, 360);  
             roid.r = r;
             return roid;
         }
 
         private string ShowSPD()
         {
-            return "SPD: " + (Math.Round(Math.Sqrt((ship.thrustX * ship.thrustX) + (ship.thrustY * ship.thrustY)), 2)*100).ToString();
+            return "SPD: " + (Math.Round(Math.Sqrt((ship.thrustX * ship.thrustX) + (ship.thrustY * ship.thrustY)), 2) * 100).ToString();
         }
 
         private void createAsteroidBelt()

@@ -61,6 +61,16 @@ namespace AsteroidsApp1 {
         }
         
         /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Asteroid {
+            get {
+                object obj = ResourceManager.GetObject("Asteroid", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на 
         ///        const FPS = 30; // frames per second
         ///        const FRICTION = 0.7; // friction coefficient of space (0 = no friction, 1 = lots of friction)
@@ -91,6 +101,16 @@ namespace AsteroidsApp1 {
         internal static System.Drawing.Bitmap kosmos {
             get {
                 object obj = ResourceManager.GetObject("kosmos", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Ship_1 {
+            get {
+                object obj = ResourceManager.GetObject("Ship_1", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
