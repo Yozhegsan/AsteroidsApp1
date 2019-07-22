@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -48,8 +49,6 @@ namespace AsteroidsApp1
 
         Bitmap finalImage = new Bitmap(SIZE_X, SIZE_Y);
         Graphics gfx;
-        
-
         struct ShipStruct
         {
             public float x;
@@ -69,7 +68,6 @@ namespace AsteroidsApp1
         }
         ShipStruct ship;
         bool ThrustShowFlag = false;
-
         struct AsteroidStruct
         {
             public float x;
@@ -78,6 +76,7 @@ namespace AsteroidsApp1
             public float yv;
             public int a;
             public float r;
+            public int rot;
         }
         List<AsteroidStruct> roids = new List<AsteroidStruct>();
         struct LaserStruct
@@ -89,7 +88,6 @@ namespace AsteroidsApp1
             public float dist;
             public int explodeTime;
         }
-
         Random rndNewAsteroid = new Random();
         Bitmap asteroid = res.Asteroid;
         Bitmap shipBMP = res.Ship_1;
@@ -105,7 +103,7 @@ namespace AsteroidsApp1
             pic.SetBounds(0, 0, SIZE_X, SIZE_Y);
             pic.BackgroundImage = res.kosmos;
             this.ClientSize = new Size(SIZE_X, SIZE_Y);
-            this.Text = "Asteroids by Yozheg";
+            this.Text = "Астероїди від Yozhega";
             gfx = Graphics.FromImage(finalImage); // pictureBox1.CreateGraphics() - Галімий метод
 
             newGame(); 
@@ -228,12 +226,8 @@ namespace AsteroidsApp1
             }
             else
             {
-                // draw the explosion (concentric circles of different colours)
-                gfx.DrawArc(new Pen(Color.DarkRed, 5), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2), ship.r * 1.7f, ship.r * 1.7f, 0, 360);
-                gfx.DrawArc(new Pen(Color.Red, 5), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2),     ship.r * 1.4f, ship.r * 1.4f, 0, 360);
-                gfx.DrawArc(new Pen(Color.Orange, 5), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2),  ship.r * 1.1f, ship.r * 1.1f, 0, 360);
-                gfx.DrawArc(new Pen(Color.Yellow, 5), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2),  ship.r * 0.8f, ship.r * 0.8f, 0, 360);
-                gfx.DrawArc(new Pen(Color.White, 5), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2),   ship.r * 0.5f, ship.r * 0.5f, 0, 360);
+                // draw the explosion
+                gfx.DrawImage(res.BOOM, ship.x - ship.r, ship.y - ship.r, ship.r * 2, ship.r * 2);
             }
 
             // draw the lasers
@@ -342,7 +336,8 @@ namespace AsteroidsApp1
             // show ship collision
             // gfx.DrawArc(new Pen(Color.Red, 1), ship.x - (SHIP_SIZE / 2), ship.y - (SHIP_SIZE / 2), SHIP_SIZE, SHIP_SIZE, 0, 360);
 
-            PaintString("Ships: " + lives, 10, 10);
+            PaintString("Кораблі: " + lives, 10, 10);
+            PaintString("Рівень: " + (level + 1), 10, 50);
 
             //if (DateTime.Now.Second == 0 && SoundFlag) { PlaySoundFromRes(); SoundFlag = false; }
             //if (DateTime.Now.Second == 1) SoundFlag = true;
@@ -392,13 +387,13 @@ namespace AsteroidsApp1
             }
             
 
-            PaintString("Score: " + score, 10, 30);
+            PaintString("Рахунок: " + score, 10, 30);
             if (ship.dead)
             {
-                PaintString(Color.Yellow, "F1 for new game\n  or F10 for exit");
+                PaintString(Color.Yellow, "F2 new game\n    F10 exit");
             }
             pic.Image = finalImage;
-            if (DateTime.Now.Second % 2 == 0) GC.Collect();
+            //if (DateTime.Now.Second % 2 == 0) GC.Collect();
         }
 
         private void destroyAsteroid(int index)
@@ -471,9 +466,9 @@ namespace AsteroidsApp1
             for (var i = 0; i < roids.Count; i++)
             {
                 tmp = roids[i];
-                tmp.a++;
-                if (tmp.a == 360) tmp.a = 0;
-
+                tmp.a += tmp.rot;
+                if(tmp.rot > 0) if(tmp.a == 360) tmp.a = 0; else if(tmp.a == 0) tmp.a = 360;
+                
                 gfx.DrawImage(RotateImage(asteroid, tmp.a), tmp.x - tmp.r, tmp.y - tmp.r, tmp.r * 2, tmp.r * 2);
 
                 //gfx.DrawArc(new Pen(Color.Green, 1), tmp.x - tmp.r, tmp.y - tmp.r, tmp.r * 2, tmp.r * 2, 0, 360);
@@ -489,7 +484,8 @@ namespace AsteroidsApp1
             roid.y = y;
             roid.xv = (float)(rndNewAsteroid.NextDouble() * ROID_SPD * lvlMult / FPS * (rndNewAsteroid.NextDouble() < 0.5 ? 1 : -1));
             roid.yv = (float)(rndNewAsteroid.NextDouble() * ROID_SPD * lvlMult / FPS * (rndNewAsteroid.NextDouble() < 0.5 ? 1 : -1));
-            roid.a = rndNewAsteroid.Next(0, 360);  
+            roid.a = rndNewAsteroid.Next(0, 360);
+            roid.rot = rndNewAsteroid.NextDouble() < 0.5 ? 1 : -1;
             roid.r = r;
             return roid;
         }
@@ -598,7 +594,7 @@ namespace AsteroidsApp1
         {
             switch (e.KeyCode)
             {
-                case Keys.F1:
+                case Keys.F2:
                     newGame();
                     break;
                 case Keys.Space:

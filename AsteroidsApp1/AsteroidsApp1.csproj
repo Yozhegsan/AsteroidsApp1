@@ -97,6 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Goodstuff-No-Nonsense-Free-Space-Asteroid-2.ico" />
+    <None Include="Resources\BOOM.png" />
     <None Include="Resources\Ship_1.png" />
     <None Include="Resources\Asteroid.png" />
   </ItemGroup>
